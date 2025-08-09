@@ -1,1 +1,1 @@
-web: ./sorobangraph-attest
+web: ./sorobangraph.attest.so

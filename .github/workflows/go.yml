@@ -40,7 +40,7 @@ jobs:
       run: go vet ./...
 
     - name: Build application
-      run: go build -v -o sorobangraph-attest .
+      run: go build -v -o sorobangraph.attest.so .
 
     - name: Build migration tool
       run: go build -v -o migrate ./cmd/migrate

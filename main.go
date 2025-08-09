@@ -2,27 +2,59 @@ package main
 
 import (
 	"context"
+	"flag"
 	"log"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"github.com/stellar/go/network"
 
+	"github.com/daccred/sorobangraph.attest.so/config"
 	"github.com/daccred/sorobangraph.attest.so/controllers"
 	"github.com/daccred/sorobangraph.attest.so/db"
 	"github.com/daccred/sorobangraph.attest.so/handlers"
 	"github.com/daccred/sorobangraph.attest.so/server"
+	"github.com/subosito/gotenv"
 )
 
 func main() {
+	// Load environment variables from .env if present
+	_ = gotenv.Load()
+
+	// Parse environment flag (default to development)
+	env := flag.String("e", "development", "application environment (development|production|test)")
+	flag.Parse()
+
+	// Initialize config based on environment
+	config.Init(*env)
+	cfg := config.GetConfig()
+
+	// Set Gin mode from env/config
 	mode := os.Getenv("GIN_MODE")
+	if mode == "" {
+		mode = cfg.GetString("server.gin_mode")
+	}
 	if mode == "release" {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	databaseURL := getEnv("DATABASE_URL", "postgres://user:password@localhost/stellar_ingester?sslmode=disable")
+	// Resolve database URL from env or config, with fallback
+	databaseURL := os.Getenv("DATABASE_URL")
+	if databaseURL == "" {
+		raw := cfg.GetString("database.url")
+		expanded := os.ExpandEnv(raw)
+		// If expansion didn't resolve (still contains ${...}) or is empty, keep databaseURL empty to allow fallback
+		if expanded != "" && !strings.Contains(expanded, "${") {
+			databaseURL = expanded
+		}
+	}
+	if databaseURL == "" {
+		databaseURL = "postgres://user:password@localhost/stellar_ingester?sslmode=disable"
+	}
+
 	dbConn, err := db.Connect(databaseURL)
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
@@ -31,13 +63,13 @@ func main() {
 
 	ingCfg := &handlers.Config{
 		NetworkPassphrase:     getEnv("NETWORK_PASSPHRASE", network.TestNetworkPassphrase),
-		CaptiveCoreConfigPath: getEnv("CAPTIVE_CORE_CONFIG_PATH", ""),
-		CaptiveCoreBinaryPath: getEnv("CAPTIVE_CORE_BINARY_PATH", ""),
+		CaptiveCoreConfigPath: getEnv("CAPTIVE_CORE_CONFIG_PATH", cfg.GetString("captive_core.config_path")),
+		CaptiveCoreBinaryPath: getEnv("CAPTIVE_CORE_BINARY_PATH", cfg.GetString("captive_core.binary_path")),
 		HistoryArchiveURLs:    []string{getEnv("HISTORY_ARCHIVE_URLS", "https://history.stellar.org/prd/core-testnet/core_testnet_001")},
-		StartLedger:           uint32(getEnvInt("START_LEDGER", 0)),
-		EndLedger:             uint32(getEnvInt("END_LEDGER", 0)),
+		StartLedger:           uint32(getEnvInt("START_LEDGER", cfg.GetInt("stellar.start_ledger"))),
+		EndLedger:             uint32(getEnvInt("END_LEDGER", cfg.GetInt("stellar.end_ledger"))),
 		EnableWebSocket:       getEnv("ENABLE_WEBSOCKET", "true") == "true",
-		LogLevel:              getEnv("LOG_LEVEL", "info"),
+		LogLevel:              getEnv("LOG_LEVEL", cfg.GetString("logging.level")),
 	}
 
 	logger := logrus.WithField("service", "ingester")

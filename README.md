@@ -71,13 +71,13 @@ The `/config` directory contains environment-specific YAML files:
 **Usage:**
 ```bash
 # Run with development config
-GO_ENV=development ./sorobangraph-attest
+GO_ENV=development ./sorobangraph.attest.so
 
 # Run with production config  
-GO_ENV=production ./sorobangraph-attest
+GO_ENV=production ./sorobangraph.attest.so
 
 # Default behavior uses 'default' config
-./sorobangraph-attest
+./sorobangraph.attest.so
 ```
 
 **Configuration Structure:**
@@ -132,7 +132,7 @@ go run cmd/healthcheck/main.go
 make build
 
 # Run the application  
-./sorobangraph-attest
+./sorobangraph.attest.so
 ```
 
 ## API Endpoints

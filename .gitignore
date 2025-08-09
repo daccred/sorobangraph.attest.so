@@ -3,7 +3,7 @@ config/production.yaml
 build/
 Godeps/
 !Godeps/Godeps.json
-sorobangraph-attest
+sorobangraph.attest.so
 sorobangraph.attest.so
 
 # AI working files

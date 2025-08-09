@@ -90,6 +90,6 @@ func main() {
 	log.Println("\n🎉 All tests passed! Your ingester is ready to run.")
 	log.Println("\nNext steps:")
 	log.Println("1. Run: make build")
-	log.Println("2. Run: ./sorobangraph-attest")
+	log.Println("2. Run: ./sorobangraph.attest.so")
 	log.Println("3. Visit: http://localhost:8080/health")
 }
