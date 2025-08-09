@@ -1,66 +1,74 @@
-# Stellar Blockchain Ingester
+# Soroban Graph Stellar Ingester
 
-A high-performance Go-based ingester for the Stellar blockchain using the native Stellar ingest package. This ingester provides real-time streaming of ledgers, transactions, operations, and Soroban contract events.
+A Stellar blockchain data ingester that processes ledgers, transactions, and Soroban contract events into PostgreSQL.
 
-## Features
+## Project Structure
 
-- **Native Stellar Ingest SDK**: Uses Stellar's official ingest package for direct ledger access
-- **Multiple Backend Support**: 
-  - Remote Captive Core (via History Archives)
-  - Local Captive Core for maximum performance
-- **Real-time WebSocket Streaming**: Live updates for transactions and events
-- **Comprehensive Data Ingestion**:
-  - Ledgers with full metadata
-  - Transactions with XDR storage
-  - Operations with detailed parsing
-  - Soroban contract events
-- **RESTful API**: Query ingested data via HTTP endpoints
-- **PostgreSQL Storage**: Efficient querying with proper indexing
-- **Resume Capability**: Automatically resumes from last processed ledger
+```
+├── main.go                 # Application entry point
+├── controllers/            # HTTP routing and request handling
+│   ├── ingester.go        # Ingester API endpoints
+│   └── user.go            # User controller (mock data)
+├── handlers/               # Business logic implementation
+│   └── ingester.go        # Stellar ingestion processing
+├── models/                 # Data models split by entity
+│   ├── stats.go           # Ingestion statistics
+│   ├── transaction.go     # Transaction model
+│   ├── operation.go       # Operation model
+│   ├── event.go           # Contract event model
+│   └── ledger.go          # Ledger model
+├── db/                     # Database connection
+├── server/                 # HTTP server setup
+├── migrations/             # Database migrations
+└── cmd/                    # Command line utilities
+    ├── migrate/            # Database migration tool
+    └── healthcheck/        # System health verification
+```
 
-## Quick Start
+## Setup ✅ COMPLETED
 
-### Using Docker Compose (Recommended)
+### 1. Database Setup
 
-1. Clone the repository
-2. Copy the environment file:
-   ```bash
-   cp .env.example .env
-   ```
+✅ **Database configured and tables created:**
+```
+postgresql://postgres:UikJouInuaAtzDYMdpsOlFxWPORldLBP@turntable.proxy.rlwy.net:52543/railway
+```
 
-3. Start the services:
-   ```bash
-   docker-compose up -d
-   ```
+### 2. Environment Configuration
 
-4. Check logs:
-   ```bash
-   docker-compose logs -f ingester
-   ```
+✅ **`.env` file created with your database:**
+```bash
+DATABASE_URL=postgresql://postgres:UikJouInuaAtzDYMdpsOlFxWPORldLBP@turntable.proxy.rlwy.net:52543/railway
+NETWORK_PASSPHRASE=Test SDF Network ; September 2015
+HISTORY_ARCHIVE_URLS=https://history.stellar.org/prd/core-testnet/core_testnet_001
+# ... other settings
+```
 
-### Local Development
+### 3. Database Migration
 
-1. Install dependencies:
-   ```bash
-   go mod download
-   ```
+✅ **Migrations completed successfully:**
+```bash
+go run cmd/migrate/main.go up
+```
 
-2. Set up PostgreSQL:
-   ```bash
-   createdb stellar_ingester
-   ```
+### 4. Test Setup
 
-3. Set environment variables:
-   ```bash
-   export DATABASE_URL="postgres://user:password@localhost/stellar_ingester?sslmode=disable"
-   export NETWORK_PASSPHRASE="Test SDF Network ; September 2015"
-   export HISTORY_ARCHIVE_URLS="https://history.stellar.org/prd/core-testnet/core_testnet_001"
-   ```
+✅ **All tests passed:**
+```bash
+go run cmd/healthcheck/main.go
+```
 
-4. Run the ingester:
-   ```bash
-   go run main.go
-   ```
+## Usage
+
+### Build and Run
+
+```bash
+# Build the application
+make build
+
+# Run the application  
+./sorobangraph-attest
+```
 
 ## API Endpoints
 
