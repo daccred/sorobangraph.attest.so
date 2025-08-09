@@ -208,10 +208,9 @@ The ingester creates the following tables:
 
 ## Performance Considerations
 
-1. **Use Captive Core**: Local Captive Core provides faster ledger access
-2. **Database Tuning**: Adjust PostgreSQL settings for write-heavy workloads
-3. **Batch Processing**: The ingester processes entire ledgers atomically
-4. **Indexing**: Proper indexes are created for common query patterns
+- [ ] **Use Local Captive Core** for faster ledger access
+- [ ] **Batch Processing**: The ingester processes entire ledgers atomically
+- [ ] **Indexing**: Proper indexes are created for common query patterns
 
 ## Monitoring
 
@@ -220,12 +219,45 @@ Check ingestion statistics:
 curl http://localhost:8080/api/v1/stats
 ```
 
-## Troubleshooting
+## Contract Filtering Configuration
 
-1. **Slow ingestion**: Consider using local Captive Core
-2. **Database connection issues**: Check PostgreSQL is running and accessible
-3. **Missing ledgers**: The ingester will automatically retry failed ledgers
-4. **WebSocket disconnections**: Clients should implement reconnection logic
+The ingester supports filtering data to only include operations, transactions, and events for specific smart contract addresses.
+
+### Default Contracts
+By default, the ingester is configured to filter for these two contracts:
+- `CADB73DZ7QP5BG5ZG6MRRL3J3X4WWHBCJ7PMCVZXYG7ZGCPIO2XCDBOM`
+- `CAD6YMZCO4Q3L5XZT2FD3MDHP3ZHFMYL24RZYG4YQAL4XQKVGVXYPSQQ`
+
+### Environment Variable
+You can override the default contracts by setting the `FILTER_CONTRACTS` environment variable:
+
+```bash
+export FILTER_CONTRACTS="CONTRACT_ADDRESS_1,CONTRACT_ADDRESS_2,CONTRACT_ADDRESS_3"
+```
+
+### Disable Filtering
+To disable filtering and ingest all data, set an empty value:
+
+```bash
+export FILTER_CONTRACTS=""
+```
+
+### What Gets Filtered
+
+When contract filtering is enabled, the ingester will only store:
+
+1. **Transactions** - Only transactions that contain at least one operation invoking one of the filtered contracts
+2. **Operations** - Only `invoke_host_function` operations that target one of the filtered contracts  
+3. **Contract Events** - Only events emitted by one of the filtered contracts
+
+All other data (ledgers, accounts, etc. not related to these contracts) will be skipped to keep the database focused on your specific contracts.
+
+## Verification
+
+When the ingester starts, it will log which contracts it's filtering for:
+```
+INFO[0000] Ingester configured to filter for contracts: [CADB73DZ7QP5BG5ZG6MRRL3J3X4WWHBCJ7PMCVZXYG7ZGCPIO2XCDBOM CAD6YMZCO4Q3L5XZT2FD3MDHP3ZHFMYL24RZYG4YQAL4XQKVGVXYPSQQ]
+```
 
 ## License
 

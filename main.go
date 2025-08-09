@@ -61,6 +61,23 @@ func main() {
 	}
 	defer dbConn.Close()
 
+	// Parse filter contracts from environment variable or config
+	filterContracts := []string{}
+	filterContractsEnv := getEnv("FILTER_CONTRACTS", "")
+	if filterContractsEnv != "" {
+		filterContracts = strings.Split(filterContractsEnv, ",")
+		for i := range filterContracts {
+			filterContracts[i] = strings.TrimSpace(filterContracts[i])
+		}
+	}
+	// Use the specific contract addresses if no env var is set
+	if len(filterContracts) == 0 {
+		filterContracts = []string{
+			"CADB73DZ7QP5BG5ZG6MRRL3J3X4WWHBCJ7PMCVZXYG7ZGCPIO2XCDBOM",
+			"CAD6YMZCO4Q3L5XZT2FD3MDHP3ZHFMYL24RZYG4YQAL4XQKVGVXYPSQQ",
+		}
+	}
+
 	ingCfg := &handlers.Config{
 		NetworkPassphrase:     getEnv("NETWORK_PASSPHRASE", network.TestNetworkPassphrase),
 		CaptiveCoreConfigPath: getEnv("CAPTIVE_CORE_CONFIG_PATH", cfg.GetString("captive_core.config_path")),
@@ -70,6 +87,7 @@ func main() {
 		EndLedger:             uint32(getEnvInt("END_LEDGER", cfg.GetInt("stellar.end_ledger"))),
 		EnableWebSocket:       getEnv("ENABLE_WEBSOCKET", "true") == "true",
 		LogLevel:              getEnv("LOG_LEVEL", cfg.GetString("logging.level")),
+		FilterContracts:       filterContracts,
 	}
 
 	logger := logrus.WithField("service", "ingester")

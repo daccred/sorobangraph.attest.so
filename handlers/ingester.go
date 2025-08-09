@@ -41,6 +41,7 @@ type Config struct {
 	EndLedger             uint32 // 0 means continuous streaming
 	EnableWebSocket       bool
 	LogLevel              string
+	FilterContracts       []string // Contract addresses to filter for
 }
 
 // WebSocket structures
@@ -77,6 +78,13 @@ func NewIngester(cfg *Config, db *sql.DB, logger *logrus.Entry) (*Ingester, erro
 		networkPassphrase: cfg.NetworkPassphrase,
 		logger:            logger,
 		stats: &models.Stats{StartTime: time.Now()},
+	}
+	
+	// Log configured filter contracts if any
+	if len(cfg.FilterContracts) > 0 {
+		logger.Infof("Ingester configured to filter for contracts: %v", cfg.FilterContracts)
+	} else {
+		logger.Info("No contract filtering configured - ingesting all data")
 	}
 
 	if cfg.EnableWebSocket {
@@ -255,6 +263,27 @@ func (i *Ingester) processTransaction(dbTx *sql.Tx, ledgerSeq uint32, tx ingest.
 	envelope := tx.Envelope
 	sourceAccount := envelope.SourceAccount().ToAccountId().Address()
 	successful := tx.Result.Successful()
+	
+	// Check if this transaction involves any of our filtered contracts
+	if len(i.config.FilterContracts) > 0 {
+		hasFilteredContract := false
+		for _, op := range envelope.Operations() {
+			if op.Body.Type == xdr.OperationTypeInvokeHostFunction {
+				invokeOp := op.Body.MustInvokeHostFunctionOp()
+				if invokeOp.HostFunction.Type == xdr.HostFunctionTypeHostFunctionTypeInvokeContract {
+					contractAddress := i.extractContractAddress(invokeOp.HostFunction.MustInvokeContract())
+					if contractAddress != "" && i.isFilteredContract(contractAddress) {
+						hasFilteredContract = true
+						break
+					}
+				}
+			}
+		}
+		// Skip this transaction if it doesn't involve any of our filtered contracts
+		if !hasFilteredContract {
+			return nil
+		}
+	}
 
 	feePaid := int64(envelope.Fee())
 
@@ -331,6 +360,20 @@ func (i *Ingester) processOperation(dbTx *sql.Tx, txID string, index uint32, op 
 	if op.SourceAccount != nil {
 		sourceAccount = op.SourceAccount.ToAccountId().Address()
 	}
+	
+	// Check if this is an invoke_host_function operation for contract filtering
+	if op.Body.Type == xdr.OperationTypeInvokeHostFunction && len(i.config.FilterContracts) > 0 {
+		invokeOp := op.Body.MustInvokeHostFunctionOp()
+		if invokeOp.HostFunction.Type == xdr.HostFunctionTypeHostFunctionTypeInvokeContract {
+			// Extract contract address from the invoke operation
+			contractAddress := i.extractContractAddress(invokeOp.HostFunction.MustInvokeContract())
+			if contractAddress != "" && !i.isFilteredContract(contractAddress) {
+				// Skip this operation if it's not for one of our filtered contracts
+				return nil
+			}
+		}
+	}
+	
 	var opType string
 	var details map[string]interface{}
 	switch op.Body.Type {
@@ -413,6 +456,15 @@ func (i *Ingester) storeSorobanEvent(dbTx *sql.Tx, event xdr.ContractEvent, ledg
 	if event.ContractId != nil {
 		contractID = fmt.Sprintf("%x", *event.ContractId)
 	}
+	
+	// Filter events by contract address if filter is configured
+	if len(i.config.FilterContracts) > 0 && contractID != "" {
+		if !i.isFilteredContract(contractID) {
+			// Skip this event if it's not for one of our filtered contracts
+			return nil
+		}
+	}
+	
 	eventType := "unknown"
 	if event.Type == xdr.ContractEventTypeContract {
 		eventType = "contract"
@@ -563,4 +615,25 @@ func (h *WebSocketHub) run() {
 			h.mu.RUnlock()
 		}
 	}
+}
+
+// Helper functions for contract filtering
+func (i *Ingester) isFilteredContract(contractAddress string) bool {
+	if len(i.config.FilterContracts) == 0 {
+		return true // No filter means include all
+	}
+	for _, filterAddr := range i.config.FilterContracts {
+		if contractAddress == filterAddr {
+			return true
+		}
+	}
+	return false
+}
+
+func (i *Ingester) extractContractAddress(invokeContract xdr.InvokeContractArgs) string {
+	if invokeContract.ContractAddress.Type == xdr.ScAddressTypeScAddressTypeContract {
+		contractHash := invokeContract.ContractAddress.MustContractId()
+		return fmt.Sprintf("%x", contractHash)
+	}
+	return ""
 }
