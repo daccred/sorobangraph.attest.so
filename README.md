@@ -8,7 +8,7 @@ A Stellar blockchain data ingester that processes ledgers, transactions, and Sor
 ├── main.go                 # Application entry point
 ├── controllers/            # HTTP routing and request handling
 │   ├── ingester.go        # Ingester API endpoints
-│   └── user.go            # User controller (mock data)
+│   └── user.go            # Accounts controller
 ├── handlers/               # Business logic implementation
 │   └── ingester.go        # Stellar ingestion processing
 ├── models/                 # Data models split by entity
@@ -29,19 +29,84 @@ A Stellar blockchain data ingester that processes ledgers, transactions, and Sor
 
 ### 1. Database Setup
 
-✅ **Database configured and tables created:**
-```
-postgresql://postgres:UikJouInuaAtzDYMdpsOlFxWPORldLBP@turntable.proxy.rlwy.net:52543/railway
-```
-
-### 2. Environment Configuration
-
-✅ **`.env` file created with your database:**
+For local development, set up PostgreSQL with:
 ```bash
-DATABASE_URL=postgresql://postgres:UikJouInuaAtzDYMdpsOlFxWPORldLBP@turntable.proxy.rlwy.net:52543/railway
+# Create user and database
+createuser -s stellar
+psql -c "ALTER USER stellar PASSWORD 'stellar123';"
+createdb -O stellar sorobangraph
+```
+
+**Reference Database URL:**
+```
+postgres://stellar:stellar123@localhost:5432/sorobangraph?sslmode=disable
+```
+
+### 2. Configuration
+
+The application supports both environment variables and YAML configuration files. YAML configs are located in `/config` and support environment-specific overrides.
+
+#### Environment Variables (.env)
+```bash
+DATABASE_URL=postgres://stellar:stellar123@localhost:5432/sorobangraph?sslmode=disable
 NETWORK_PASSPHRASE=Test SDF Network ; September 2015
 HISTORY_ARCHIVE_URLS=https://history.stellar.org/prd/core-testnet/core_testnet_001
-# ... other settings
+START_LEDGER=0
+END_LEDGER=0
+ENABLE_WEBSOCKET=true
+LOG_LEVEL=info
+GIN_MODE=debug
+PORT=8080
+```
+
+#### YAML Configuration Files
+
+The `/config` directory contains environment-specific YAML files:
+
+- **`default.yaml`** - Base configuration with default values
+- **`development.yaml`** - Development overrides (debug logging, smaller batches)
+- **`production.yaml`** - Production overrides (performance optimized, env vars)  
+- **`test.yaml`** - Test overrides (minimal logging, small datasets)
+
+**Usage:**
+```bash
+# Run with development config
+GO_ENV=development ./sorobangraph-attest
+
+# Run with production config  
+GO_ENV=production ./sorobangraph-attest
+
+# Default behavior uses 'default' config
+./sorobangraph-attest
+```
+
+**Configuration Structure:**
+```yaml
+database:
+  url: "${DATABASE_URL}"  # References .env file
+  max_open_connections: 25
+  max_idle_connections: 10
+
+stellar:
+  network_passphrase: "Test SDF Network ; September 2015"
+  history_archive_urls:
+    - "https://history.stellar.org/prd/core-testnet/core_testnet_001"
+  start_ledger: 0
+  end_ledger: 0
+
+server:
+  port: 8080
+  gin_mode: "debug"
+  enable_websocket: true
+
+logging:
+  level: "info"
+  format: "json"
+
+ingestion:
+  batch_size: 1000
+  retry_attempts: 3
+  enable_captive_core: false
 ```
 
 ### 3. Database Migration

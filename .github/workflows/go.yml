@@ -13,16 +13,45 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Set up Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v5
       with:
-        go-version: '1.20'
+        go-version: '1.23'
+        cache: true
 
-    - name: Build
-      run: go build -v ./...
+    - name: Download dependencies
+      run: go mod download
 
-    - name: Test
-      run: go test -v ./...
+    - name: Verify dependencies
+      run: go mod verify
+
+    - name: Run go fmt
+      run: |
+        if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
+          gofmt -s -l .
+          exit 1
+        fi
+
+    - name: Run go vet
+      run: go vet ./...
+
+    - name: Build application
+      run: go build -v -o sorobangraph-attest .
+
+    - name: Build migration tool
+      run: go build -v -o migrate ./cmd/migrate
+
+    - name: Build healthcheck tool  
+      run: go build -v -o healthcheck ./cmd/healthcheck
+
+    - name: Test (skip if no tests)
+      run: |
+        if go list ./... | xargs -n1 go list -f '{{.Dir}} {{.TestGoFiles}}' | grep -v '\[\]' > /dev/null; then
+          go test -v ./...
+        else
+          echo "No tests found, skipping test step"
+        fi

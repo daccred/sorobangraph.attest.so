@@ -1,0 +1,27 @@
+# Production environment overrides
+database:
+  url: "${DATABASE_URL}"  # Use environment variable
+  max_open_connections: 50
+  max_idle_connections: 25
+  connection_max_lifetime: "10m"
+
+server:
+  gin_mode: "release"
+  host: "0.0.0.0"
+
+logging:
+  level: "warn"
+  format: "json"
+
+stellar:
+  network_passphrase: "${NETWORK_PASSPHRASE}"
+  history_archive_urls:
+    - "${HISTORY_ARCHIVE_URL}"
+
+ingestion:
+  batch_size: 2000  # Larger batches for production
+  enable_captive_core: true
+
+captive_core:
+  binary_path: "${CAPTIVE_CORE_BINARY_PATH}"
+  config_path: "${CAPTIVE_CORE_CONFIG_PATH}"

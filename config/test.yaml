@@ -1,0 +1,20 @@
+# Test environment overrides
+database:
+  url: "${DATABASE_URL}"
+  max_open_connections: 5
+  max_idle_connections: 2
+
+server:
+  port: 8081
+  gin_mode: "test"
+
+logging:
+  level: "error"  # Minimal logging during tests
+
+stellar:
+  start_ledger: 1000000  # Start from a specific test ledger
+  end_ledger: 1000010    # Process only a few ledgers for testing
+
+ingestion:
+  batch_size: 10   # Small batches for fast tests
+  retry_attempts: 1
