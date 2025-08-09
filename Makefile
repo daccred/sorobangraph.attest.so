@@ -1,4 +1,4 @@
-NAME=sorobangraph.attest.so
+NAME=sorobangraph-attest
 VERSION=0.0.1
 
 .PHONY: build

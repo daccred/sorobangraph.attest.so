@@ -1,1 +1,1 @@
-web: ./sorobangraph.attest.so -e development
+web: ./sorobangraph-attest -e development
