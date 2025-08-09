@@ -9,12 +9,12 @@ build:
 .PHONY: run
 ## run: Build and Run in development mode.
 run: build
-	@./$(NAME) -e development
+	@./$(NAME)
 
 .PHONY: run-prod
 ## run-prod: Build and Run in production mode.
 run-prod: build
-	@./$(NAME) -e production
+	@./$(NAME)
 
 .PHONY: clean
 ## clean: Clean project and previous builds.
@@ -29,7 +29,7 @@ deps:
 .PHONY: test
 ## test: Run tests with verbose mode
 test:
-	@go test -v ./tests/*
+	@go test -v ./...
 
 .PHONY: help
 all: help

@@ -2,24 +2,34 @@ package controllers
 
 import (
 	"net/http"
+	"time"
 
-	"github.com/daccred/sorobangraph.attest.so/models"
 	"github.com/gin-gonic/gin"
 )
 
 type UserController struct{}
 
-var userModel = new(models.User)
+// MockUser represents mock user data
+type MockUser struct {
+	ID        string    `json:"id"`
+	Username  string    `json:"username"`
+	Email     string    `json:"email"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
 
 func (u UserController) Retrieve(c *gin.Context) {
-	if c.Param("id") != "" {
-		user, err := userModel.GetByID(c.Param("id"))
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Error to retrieve user", "error": err})
-			c.Abort()
-			return
+	userID := c.Param("id")
+	if userID != "" {
+		// Return mock user data
+		mockUser := MockUser{
+			ID:        userID,
+			Username:  "user_" + userID,
+			Email:     "user" + userID + "@example.com",
+			CreatedAt: time.Now().Add(-24 * time.Hour),
+			UpdatedAt: time.Now(),
 		}
-		c.JSON(http.StatusOK, gin.H{"message": "User founded!", "user": user})
+		c.JSON(http.StatusOK, gin.H{"message": "User found!", "user": mockUser})
 		return
 	}
 	c.JSON(http.StatusBadRequest, gin.H{"message": "bad request"})

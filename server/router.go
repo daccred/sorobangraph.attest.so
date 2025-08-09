@@ -1,29 +1,27 @@
 package server
 
 import (
+	"time"
+
 	"github.com/daccred/sorobangraph.attest.so/controllers"
-	"github.com/daccred/sorobangraph.attest.so/middlewares"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
-func NewRouter() *gin.Engine {
-	router := gin.New()
-	router.Use(gin.Logger())
-	router.Use(gin.Recovery())
+func NewRouter(ingesterController *controllers.IngesterController) *gin.Engine {
+	r := gin.New()
+	r.Use(gin.Recovery())
+	r.Use(gin.Logger())
 
-	health := new(controllers.HealthController)
+	cfg := cors.DefaultConfig()
+	cfg.AllowOrigins = []string{"http://localhost:3000", "http://localhost:5173"}
+	cfg.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
+	cfg.AllowHeaders = []string{"Origin", "Content-Type", "Authorization"}
+	cfg.AllowCredentials = true
+	cfg.MaxAge = 12 * time.Hour
+	r.Use(cors.New(cfg))
 
-	router.GET("/health", health.Status)
-	router.Use(middlewares.AuthMiddleware())
+	ingesterController.RegisterRoutes(r)
 
-	v1 := router.Group("v1")
-	{
-		userGroup := v1.Group("user")
-		{
-			user := new(controllers.UserController)
-			userGroup.GET("/:id", user.Retrieve)
-		}
-	}
-	return router
-
+	return r
 }

@@ -5,3 +5,7 @@ Godeps/
 !Godeps/Godeps.json
 sorobangraph-attest
 sorobangraph.attest.so
+
+# AI working files
+.cursor
+.claude
