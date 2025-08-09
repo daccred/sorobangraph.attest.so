@@ -115,6 +115,13 @@ func (i *Ingester) Start(ctx context.Context) error {
 	}
 
 	i.logger.Infof("Starting ingestion from ledger %d", startLedger)
+
+	// If no ledger backend is configured, skip ingestion gracefully
+	if i.ledgerBackend == nil {
+		i.logger.Warn("Ledger backend not configured; skipping ingestion")
+		return nil
+	}
+
 	if err := i.ledgerBackend.PrepareRange(ctx, ledgerRange); err != nil {
 		return fmt.Errorf("failed to prepare range: %w", err)
 	}

@@ -198,7 +198,7 @@ func (ic *IngesterController) GetContractEvents(c *gin.Context) {
 		SELECT id, contract_id, ledger, transaction_hash, event_type,
 		       topics, data, in_successful_tx
 		FROM contract_events`
-	args := []interface{}{}
+	args := []any{}
 	if contractID != "" {
 		query += " WHERE contract_id = $1"
 		args = append(args, contractID)

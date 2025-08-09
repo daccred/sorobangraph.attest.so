@@ -1,8 +1,6 @@
 module github.com/daccred/sorobangraph.attest.so
 
-go 1.23
-
-toolchain go1.24.6
+go 1.24
 
 require (
 	github.com/gin-contrib/cache v1.2.0
