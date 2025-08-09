@@ -1,6 +1,6 @@
 package server
 
-import "github.com/vsouza/go-gin-boilerplate/config"
+import "github.com/daccred/sorobangraph.attest.so/config"
 
 func Init() {
 	config := config.GetConfig()

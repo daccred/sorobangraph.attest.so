@@ -1,1 +1,1 @@
-web: ./go-gin-boilerplate -e development
+web: ./sorobangraph.attest.so -e development

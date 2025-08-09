@@ -1,4 +1,4 @@
-module github.com/vsouza/go-gin-boilerplate
+module github.com/daccred/sorobangraph.attest.so
 
 go 1.14
 

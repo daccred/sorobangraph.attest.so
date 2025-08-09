@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/vsouza/go-gin-boilerplate/config"
-	"github.com/vsouza/go-gin-boilerplate/db"
-	"github.com/vsouza/go-gin-boilerplate/server"
+	"github.com/daccred/sorobangraph.attest.so/config"
+	"github.com/daccred/sorobangraph.attest.so/db"
+	"github.com/daccred/sorobangraph.attest.so/server"
 )
 
 func main() {

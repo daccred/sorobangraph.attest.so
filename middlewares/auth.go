@@ -6,8 +6,8 @@ import (
 	"crypto/sha256"
 	"crypto/subtle"
 
+	"github.com/daccred/sorobangraph.attest.so/config"
 	"github.com/gin-gonic/gin"
-	"github.com/vsouza/go-gin-boilerplate/config"
 )
 
 func sha256Sum(s string) []byte {

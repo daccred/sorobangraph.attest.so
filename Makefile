@@ -1,4 +1,4 @@
-NAME=go-gin-boilerplate
+NAME=sorobangraph.attest.so
 VERSION=0.0.1
 
 .PHONY: build

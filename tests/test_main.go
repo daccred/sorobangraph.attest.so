@@ -3,10 +3,10 @@ package tests
 import (
 	"testing"
 
+	"github.com/daccred/sorobangraph.attest.so/config"
+	"github.com/daccred/sorobangraph.attest.so/controllers"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
-	"github.com/vsouza/go-gin-boilerplate/config"
-	"github.com/vsouza/go-gin-boilerplate/controllers"
 )
 
 func Test(t *testing.T) { Testing(t) }
