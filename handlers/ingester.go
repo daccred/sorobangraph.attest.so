@@ -67,9 +67,41 @@ func NewIngester(cfg *Config, db *sql.DB, logger *logrus.Entry) (*Ingester, erro
 		}
 	}
 
-	// For now, we'll disable the ledger backend initialization for testing
-	// In production, you'll need to configure Stellar Core properly
-	var ledgerBackend backends.LedgerBackend = nil
+	// Initialize a ledger backend when configured
+	var ledgerBackend backends.LedgerBackend
+	if cfg.CaptiveCoreBinaryPath != "" {
+		params := backends.CaptiveCoreTomlParams{
+			NetworkPassphrase:                  cfg.NetworkPassphrase,
+			HistoryArchiveURLs:                 cfg.HistoryArchiveURLs,
+			Strict:                             false,
+			UseDB:                              false,
+			CoreBinaryPath:                     cfg.CaptiveCoreBinaryPath,
+			EnforceSorobanDiagnosticEvents:     true,
+			EnforceSorobanTransactionMetaExtV1: true,
+		}
+		var tomlCfg *backends.CaptiveCoreToml
+		var err error
+		if cfg.CaptiveCoreConfigPath != "" {
+			tomlCfg, err = backends.NewCaptiveCoreTomlFromFile(cfg.CaptiveCoreConfigPath, params)
+		} else {
+			tomlCfg, err = backends.NewCaptiveCoreToml(params)
+		}
+		if err != nil {
+			return nil, fmt.Errorf("failed to prepare captive core config: %w", err)
+		}
+		ccCfg := backends.CaptiveCoreConfig{
+			BinaryPath:         cfg.CaptiveCoreBinaryPath,
+			NetworkPassphrase:  cfg.NetworkPassphrase,
+			HistoryArchiveURLs: cfg.HistoryArchiveURLs,
+			Toml:               tomlCfg,
+			Log:                log.DefaultLogger,
+		}
+		captive, err := backends.NewCaptive(ccCfg)
+		if err != nil {
+			return nil, fmt.Errorf("failed to initialize captive core backend: %w", err)
+		}
+		ledgerBackend = captive
+	}
 
 	ingester := &Ingester{
 		config:            cfg,
