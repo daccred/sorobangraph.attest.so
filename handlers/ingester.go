@@ -77,9 +77,9 @@ func NewIngester(cfg *Config, db *sql.DB, logger *logrus.Entry) (*Ingester, erro
 		ledgerBackend:     ledgerBackend,
 		networkPassphrase: cfg.NetworkPassphrase,
 		logger:            logger,
-		stats: &models.Stats{StartTime: time.Now()},
+		stats:             &models.Stats{StartTime: time.Now()},
 	}
-	
+
 	// Log configured filter contracts if any
 	if len(cfg.FilterContracts) > 0 {
 		logger.Infof("Ingester configured to filter for contracts: %v", cfg.FilterContracts)
@@ -263,7 +263,7 @@ func (i *Ingester) processTransaction(dbTx *sql.Tx, ledgerSeq uint32, tx ingest.
 	envelope := tx.Envelope
 	sourceAccount := envelope.SourceAccount().ToAccountId().Address()
 	successful := tx.Result.Successful()
-	
+
 	// Check if this transaction involves any of our filtered contracts
 	if len(i.config.FilterContracts) > 0 {
 		hasFilteredContract := false
@@ -360,7 +360,7 @@ func (i *Ingester) processOperation(dbTx *sql.Tx, txID string, index uint32, op 
 	if op.SourceAccount != nil {
 		sourceAccount = op.SourceAccount.ToAccountId().Address()
 	}
-	
+
 	// Check if this is an invoke_host_function operation for contract filtering
 	if op.Body.Type == xdr.OperationTypeInvokeHostFunction && len(i.config.FilterContracts) > 0 {
 		invokeOp := op.Body.MustInvokeHostFunctionOp()
@@ -373,7 +373,7 @@ func (i *Ingester) processOperation(dbTx *sql.Tx, txID string, index uint32, op 
 			}
 		}
 	}
-	
+
 	var opType string
 	var details map[string]interface{}
 	switch op.Body.Type {
@@ -456,7 +456,7 @@ func (i *Ingester) storeSorobanEvent(dbTx *sql.Tx, event xdr.ContractEvent, ledg
 	if event.ContractId != nil {
 		contractID = fmt.Sprintf("%x", *event.ContractId)
 	}
-	
+
 	// Filter events by contract address if filter is configured
 	if len(i.config.FilterContracts) > 0 && contractID != "" {
 		if !i.isFilteredContract(contractID) {
@@ -464,7 +464,7 @@ func (i *Ingester) storeSorobanEvent(dbTx *sql.Tx, event xdr.ContractEvent, ledg
 			return nil
 		}
 	}
-	
+
 	eventType := "unknown"
 	if event.Type == xdr.ContractEventTypeContract {
 		eventType = "contract"
@@ -494,13 +494,51 @@ func (i *Ingester) storeSorobanEvent(dbTx *sql.Tx, event xdr.ContractEvent, ledg
 }
 
 // Helpers
-func (i *Ingester) getCurrentLedger() uint32 { i.mu.RLock(); defer i.mu.RUnlock(); return i.currentLedger }
-func (i *Ingester) setCurrentLedger(ledger uint32) { i.mu.Lock(); defer i.mu.Unlock(); i.currentLedger = ledger; i.stats.CurrentLedger = ledger }
-func (i *Ingester) incrementTransactionCount() { i.mu.Lock(); defer i.mu.Unlock(); i.stats.TransactionCount++ }
-func (i *Ingester) incrementOperationCount(count int64) { i.mu.Lock(); defer i.mu.Unlock(); i.stats.OperationCount += count }
+func (i *Ingester) getCurrentLedger() uint32 {
+	i.mu.RLock()
+	defer i.mu.RUnlock()
+	return i.currentLedger
+}
+func (i *Ingester) setCurrentLedger(ledger uint32) {
+	i.mu.Lock()
+	defer i.mu.Unlock()
+	i.currentLedger = ledger
+	i.stats.CurrentLedger = ledger
+}
+func (i *Ingester) incrementTransactionCount() {
+	i.mu.Lock()
+	defer i.mu.Unlock()
+	i.stats.TransactionCount++
+}
+func (i *Ingester) incrementOperationCount(count int64) {
+	i.mu.Lock()
+	defer i.mu.Unlock()
+	i.stats.OperationCount += count
+}
 func (i *Ingester) incrementEventCount() { i.mu.Lock(); defer i.mu.Unlock(); i.stats.EventCount++ }
-func (i *Ingester) incrementLedgersProcessed() { i.mu.Lock(); defer i.mu.Unlock(); i.stats.LedgersProcessed++; elapsed := time.Since(i.stats.StartTime).Seconds(); if elapsed > 0 { i.stats.ProcessingRate = float64(i.stats.LedgersProcessed) / elapsed } }
-func (i *Ingester) updateStats(ctx context.Context) { ticker := time.NewTicker(30 * time.Second); defer ticker.Stop(); for { select { case <-ctx.Done(): return; case <-ticker.C: i.mu.Lock(); i.stats.LastUpdateTime = time.Now(); i.mu.Unlock() } } }
+func (i *Ingester) incrementLedgersProcessed() {
+	i.mu.Lock()
+	defer i.mu.Unlock()
+	i.stats.LedgersProcessed++
+	elapsed := time.Since(i.stats.StartTime).Seconds()
+	if elapsed > 0 {
+		i.stats.ProcessingRate = float64(i.stats.LedgersProcessed) / elapsed
+	}
+}
+func (i *Ingester) updateStats(ctx context.Context) {
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			i.mu.Lock()
+			i.stats.LastUpdateTime = time.Now()
+			i.mu.Unlock()
+		}
+	}
+}
 
 // XDR helpers
 func (i *Ingester) scValToString(val xdr.ScVal) string {
@@ -607,13 +645,25 @@ func (h *WebSocketHub) run() {
 	for {
 		select {
 		case client := <-h.register:
-			h.mu.Lock(); h.clients[client] = true; h.mu.Unlock()
+			h.mu.Lock()
+			h.clients[client] = true
+			h.mu.Unlock()
 		case client := <-h.unregister:
-			h.mu.Lock(); if _, ok := h.clients[client]; ok { delete(h.clients, client); close(client.send) }; h.mu.Unlock()
+			h.mu.Lock()
+			if _, ok := h.clients[client]; ok {
+				delete(h.clients, client)
+				close(client.send)
+			}
+			h.mu.Unlock()
 		case message := <-h.broadcast:
 			h.mu.RLock()
 			for client := range h.clients {
-				select { case client.send <- message: default: delete(h.clients, client); close(client.send) }
+				select {
+				case client.send <- message:
+				default:
+					delete(h.clients, client)
+					close(client.send)
+				}
 			}
 			h.mu.RUnlock()
 		}

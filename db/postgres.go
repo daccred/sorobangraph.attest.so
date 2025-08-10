@@ -16,4 +16,4 @@ func Connect(databaseURL string) (*sql.DB, error) {
 	db.SetMaxIdleConns(10)
 	db.SetConnMaxLifetime(5 * time.Minute)
 	return db, db.Ping()
-} 
+}

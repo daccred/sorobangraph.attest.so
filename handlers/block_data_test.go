@@ -17,10 +17,10 @@ func TestScValConversion(t *testing.T) {
 	config := &Config{
 		NetworkPassphrase: "Test SDF Network ; September 2015",
 	}
-	
+
 	ingester, err := NewIngester(config, nil, logger)
 	require.NoError(t, err)
-	
+
 	t.Run("ScVal to String conversions", func(t *testing.T) {
 		tests := []struct {
 			name     string
@@ -68,7 +68,7 @@ func TestScValConversion(t *testing.T) {
 				expected: "hello world",
 			},
 		}
-		
+
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				result := ingester.scValToString(tt.scVal)
@@ -76,23 +76,23 @@ func TestScValConversion(t *testing.T) {
 			})
 		}
 	})
-	
+
 	t.Run("ScVal to JSON conversions", func(t *testing.T) {
 		// Test boolean
 		boolVal := xdr.ScVal{Type: xdr.ScValTypeScvBool, B: &[]bool{true}[0]}
 		result := ingester.scValToJSON(boolVal)
 		assert.Equal(t, true, result)
-		
+
 		// Test integer
 		intVal := xdr.ScVal{Type: xdr.ScValTypeScvI32, I32: &[]xdr.Int32{42}[0]}
 		result = ingester.scValToJSON(intVal)
 		assert.Equal(t, xdr.Int32(42), result)
-		
+
 		// Test string
 		strVal := xdr.ScVal{Type: xdr.ScValTypeScvString, Str: &[]xdr.ScString{xdr.ScString("test")}[0]}
 		result = ingester.scValToJSON(strVal)
 		assert.Equal(t, "test", result)
-		
+
 		// Test vector
 		vec := &xdr.ScVec{
 			xdr.ScVal{Type: xdr.ScValTypeScvI32, I32: &[]xdr.Int32{1}[0]},
@@ -104,7 +104,7 @@ func TestScValConversion(t *testing.T) {
 		resultArray, ok := result.([]interface{})
 		assert.True(t, ok)
 		assert.Len(t, resultArray, 3)
-		
+
 		// Test map
 		mapEntries := &xdr.ScMap{
 			{
@@ -135,16 +135,16 @@ func TestLedgerInfoProcessing(t *testing.T) {
 		MaxTxSetSize:     1000,
 		ProtocolVersion:  20,
 	}
-	
+
 	// Test JSON marshaling
 	jsonData, err := json.Marshal(ledgerInfo)
 	require.NoError(t, err)
-	
+
 	// Test JSON unmarshaling
 	var unmarshaled models.LedgerInfo
 	err = json.Unmarshal(jsonData, &unmarshaled)
 	require.NoError(t, err)
-	
+
 	assert.Equal(t, ledgerInfo.Sequence, unmarshaled.Sequence)
 	assert.Equal(t, ledgerInfo.Hash, unmarshaled.Hash)
 	assert.Equal(t, ledgerInfo.TransactionCount, unmarshaled.TransactionCount)
@@ -156,10 +156,10 @@ func TestExtractContractAddress(t *testing.T) {
 	config := &Config{
 		NetworkPassphrase: "Test SDF Network ; September 2015",
 	}
-	
+
 	ingester, err := NewIngester(config, nil, logger)
 	require.NoError(t, err)
-	
+
 	t.Run("Contract address extraction", func(t *testing.T) {
 		// Create a contract ID
 		contractHash := xdr.Hash{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32}
@@ -167,18 +167,18 @@ func TestExtractContractAddress(t *testing.T) {
 			Type:       xdr.ScAddressTypeScAddressTypeContract,
 			ContractId: &contractHash,
 		}
-		
+
 		invokeArgs := xdr.InvokeContractArgs{
 			ContractAddress: contractAddress,
 			FunctionName:    xdr.ScSymbol("test_function"),
 			Args:            xdr.ScVec{},
 		}
-		
+
 		result := ingester.extractContractAddress(invokeArgs)
 		expected := "0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"
 		assert.Equal(t, expected, result)
 	})
-	
+
 	t.Run("Non-contract address returns empty", func(t *testing.T) {
 		// Create an account address instead of contract
 		accountId := xdr.AccountId{
@@ -188,13 +188,13 @@ func TestExtractContractAddress(t *testing.T) {
 			Type:      xdr.ScAddressTypeScAddressTypeAccount,
 			AccountId: &accountId,
 		}
-		
+
 		invokeArgs := xdr.InvokeContractArgs{
 			ContractAddress: accountAddress,
 			FunctionName:    xdr.ScSymbol("test_function"),
 			Args:            xdr.ScVec{},
 		}
-		
+
 		result := ingester.extractContractAddress(invokeArgs)
 		assert.Equal(t, "", result)
 	})
@@ -207,32 +207,32 @@ func TestWebSocketHub(t *testing.T) {
 		register:   make(chan *WebSocketClient),
 		unregister: make(chan *WebSocketClient),
 	}
-	
+
 	// Test client registration
 	client := &WebSocketClient{
 		send: make(chan interface{}, 256),
 		hub:  hub,
 	}
-	
+
 	// Start hub in background
 	go hub.run()
-	
+
 	// Register client
 	hub.register <- client
 	time.Sleep(10 * time.Millisecond) // Give time for registration
-	
+
 	hub.mu.RLock()
 	_, exists := hub.clients[client]
 	hub.mu.RUnlock()
 	assert.True(t, exists, "Client should be registered")
-	
+
 	// Test broadcast
 	testMessage := map[string]interface{}{
 		"type": "test",
 		"data": "test_data",
 	}
 	hub.broadcast <- testMessage
-	
+
 	select {
 	case msg := <-client.send:
 		msgMap, ok := msg.(map[string]interface{})
@@ -242,11 +242,11 @@ func TestWebSocketHub(t *testing.T) {
 	case <-time.After(100 * time.Millisecond):
 		t.Error("Did not receive broadcast message")
 	}
-	
+
 	// Unregister client
 	hub.unregister <- client
 	time.Sleep(10 * time.Millisecond) // Give time for unregistration
-	
+
 	hub.mu.RLock()
 	_, exists = hub.clients[client]
 	hub.mu.RUnlock()
@@ -258,15 +258,15 @@ func TestStatsUpdateAndTracking(t *testing.T) {
 	config := &Config{
 		NetworkPassphrase: "Test SDF Network ; September 2015",
 	}
-	
+
 	ingester, err := NewIngester(config, nil, logger)
 	require.NoError(t, err)
-	
+
 	// Test concurrent stats updates
 	done := make(chan bool)
 	numGoroutines := 10
 	incrementsPerGoroutine := 100
-	
+
 	for i := 0; i < numGoroutines; i++ {
 		go func() {
 			for j := 0; j < incrementsPerGoroutine; j++ {
@@ -277,12 +277,12 @@ func TestStatsUpdateAndTracking(t *testing.T) {
 			done <- true
 		}()
 	}
-	
+
 	// Wait for all goroutines
 	for i := 0; i < numGoroutines; i++ {
 		<-done
 	}
-	
+
 	expectedCount := int64(numGoroutines * incrementsPerGoroutine)
 	assert.Equal(t, expectedCount, ingester.stats.TransactionCount)
 	assert.Equal(t, expectedCount, ingester.stats.OperationCount)
@@ -294,21 +294,21 @@ func TestProcessingRateCalculation(t *testing.T) {
 	config := &Config{
 		NetworkPassphrase: "Test SDF Network ; September 2015",
 	}
-	
+
 	ingester, err := NewIngester(config, nil, logger)
 	require.NoError(t, err)
-	
+
 	// Set a start time in the past
 	ingester.stats.StartTime = time.Now().Add(-10 * time.Second)
-	
+
 	// Increment ledgers processed
 	for i := 0; i < 100; i++ {
 		ingester.incrementLedgersProcessed()
 	}
-	
+
 	assert.Equal(t, int64(100), ingester.stats.LedgersProcessed)
 	assert.Greater(t, ingester.stats.ProcessingRate, float64(0))
-	
+
 	// Processing rate should be approximately 10 ledgers/second
 	// (100 ledgers in ~10 seconds)
 	assert.InDelta(t, 10.0, ingester.stats.ProcessingRate, 2.0)

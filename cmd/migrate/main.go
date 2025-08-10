@@ -45,7 +45,7 @@ func main() {
 
 func runMigrations(dbConn *sql.DB) error {
 	migrationsDir := "migrations"
-	
+
 	// Get all SQL files in migrations directory
 	files, err := filepath.Glob(filepath.Join(migrationsDir, "*.sql"))
 	if err != nil {
@@ -54,7 +54,7 @@ func runMigrations(dbConn *sql.DB) error {
 
 	for _, file := range files {
 		fmt.Printf("Running migration: %s\n", file)
-		
+
 		content, err := os.ReadFile(file)
 		if err != nil {
 			return fmt.Errorf("failed to read migration file %s: %w", file, err)

@@ -56,7 +56,7 @@ func main() {
 	log.Println("✅ Controller created successfully!")
 
 	log.Println("Testing basic database queries...")
-	
+
 	// Test querying the ingestion_state table
 	var lastLedger uint32
 	err = dbConn.QueryRow("SELECT last_ledger FROM ingestion_state WHERE id = 1").Scan(&lastLedger)
@@ -75,7 +75,7 @@ func main() {
 		ON CONFLICT (sequence) DO NOTHING`,
 		testSeq, "test_hash", "test_prev_hash", 0, 0, time.Now(),
 		0, 0, 100, 5000000, 1000, 21)
-	
+
 	if err != nil {
 		log.Fatalf("failed to insert test ledger: %v", err)
 	}
@@ -85,7 +85,7 @@ func main() {
 	if err != nil {
 		log.Printf("Warning: failed to clean up test ledger: %v", err)
 	}
-	
+
 	log.Println("✅ Database operations successful!")
 	log.Println("\n🎉 All tests passed! Your ingester is ready to run.")
 	log.Println("\nNext steps:")

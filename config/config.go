@@ -29,7 +29,7 @@ func Init(env string) {
 		configName = "testnet"
 	case "production":
 		configName = "mainnet"
-	// Keep other environments as-is (e.g., "test")
+		// Keep other environments as-is (e.g., "test")
 	}
 
 	envConfig := viper.New()
