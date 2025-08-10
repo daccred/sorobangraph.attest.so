@@ -20,8 +20,8 @@ stellar:
   # Contract addresses to filter for (mainnet addresses)
   # Update these with your actual mainnet contract addresses
   filter_contracts:
-    - "CADB73DZ7QP5BG5ZG6MRRL3J3X4WWHBCJ7PMCVZXYG7ZGCPIO2XCDBOM"
-    - "CAD6YMZCO4Q3L5XZT2FD3MDHP3ZHFMYL24RZYG4YQAL4XQKVGVXYPSQQ"
+    - ""
+    - ""
 
 ingestion:
   batch_size: 2000  # Larger batches for production

@@ -10,7 +10,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
-	"github.com/stellar/go/network"
 
 	"github.com/daccred/sorobangraph.attest.so/config"
 	"github.com/daccred/sorobangraph.attest.so/controllers"
@@ -52,7 +51,8 @@ func main() {
 		}
 	}
 	if databaseURL == "" {
-		databaseURL = "postgres://user:password@localhost/stellar_ingester?sslmode=disable"
+		// Default to local development database
+		databaseURL = "postgres://stellar:stellar123@localhost:5432/sorobangraph?sslmode=disable"
 	}
 
 	dbConn, err := db.Connect(databaseURL)
@@ -75,15 +75,29 @@ func main() {
 		filterContracts = cfg.GetStringSlice("stellar.filter_contracts")
 	}
 
+	// Determine network mode (mainnet vs testnet)
+	networkMode := getEnv("NETWORK_MODE", "testnet")
+	var defaultPassphrase, defaultArchiveURL string
+	
+	if networkMode == "mainnet" {
+		// Mainnet configuration
+		defaultPassphrase = "Public Global Stellar Network ; September 2015"
+		defaultArchiveURL = "https://history.stellar.org/prd/core-live/core_live_001"
+	} else {
+		// Testnet configuration (default)
+		defaultPassphrase = "Test SDF Network ; September 2015"
+		defaultArchiveURL = "https://history.stellar.org/prd/core-testnet/core_testnet_001"
+	}
+	
 	ingCfg := &handlers.Config{
-		NetworkPassphrase:     getEnv("NETWORK_PASSPHRASE", network.TestNetworkPassphrase),
+		NetworkPassphrase:     getEnv("NETWORK_PASSPHRASE", defaultPassphrase),
 		CaptiveCoreConfigPath: getEnv("CAPTIVE_CORE_CONFIG_PATH", cfg.GetString("captive_core.config_path")),
 		CaptiveCoreBinaryPath: getEnv("CAPTIVE_CORE_BINARY_PATH", cfg.GetString("captive_core.binary_path")),
-		HistoryArchiveURLs:    []string{getEnv("HISTORY_ARCHIVE_URLS", "https://history.stellar.org/prd/core-testnet/core_testnet_001")},
-		StartLedger:           uint32(getEnvInt("START_LEDGER", cfg.GetInt("stellar.start_ledger"))),
-		EndLedger:             uint32(getEnvInt("END_LEDGER", cfg.GetInt("stellar.end_ledger"))),
+		HistoryArchiveURLs:    []string{getEnv("HISTORY_ARCHIVE_URLS", defaultArchiveURL)},
+		StartLedger:           uint32(getEnvInt("START_LEDGER", 0)),
+		EndLedger:             uint32(getEnvInt("END_LEDGER", 0)),
 		EnableWebSocket:       getEnv("ENABLE_WEBSOCKET", "true") == "true",
-		LogLevel:              getEnv("LOG_LEVEL", cfg.GetString("logging.level")),
+		LogLevel:              getEnv("LOG_LEVEL", "info"),
 		FilterContracts:       filterContracts,
 	}
 

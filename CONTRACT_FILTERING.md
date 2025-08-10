@@ -1,6 +1,6 @@
 # Contract Filtering Configuration
 
-The ingester now supports filtering data to only include operations, transactions, and events for specific smart contract addresses.
+The ingester supports filtering data to only include operations, transactions, and events for specific smart contract addresses.
 
 ## Configuration
 

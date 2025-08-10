@@ -18,7 +18,7 @@ func main() {
 	command := os.Args[1]
 	databaseURL := os.Getenv("DATABASE_URL")
 	if databaseURL == "" {
-		databaseURL = "postgres://user:password@localhost/stellar_ingester?sslmode=disable"
+		log.Fatal("DATABASE_URL environment variable is required")
 	}
 
 	dbConn, err := db.Connect(databaseURL)
