@@ -22,13 +22,23 @@ func Init(env string) {
 		log.Fatal("error on parsing default configuration file")
 	}
 
+	// Map environment names to config files
+	configName := env
+	switch env {
+	case "development":
+		configName = "testnet"
+	case "production":
+		configName = "mainnet"
+	// Keep other environments as-is (e.g., "test")
+	}
+
 	envConfig := viper.New()
 	envConfig.SetConfigType("yaml")
 	envConfig.AddConfigPath("config/")
-	envConfig.SetConfigName(env)
+	envConfig.SetConfigName(configName)
 	err = envConfig.ReadInConfig()
 	if err != nil {
-		log.Fatal("error on parsing env configuration file")
+		log.Fatalf("error on parsing %s configuration file: %v", configName, err)
 	}
 
 	config.MergeConfigMap(envConfig.AllSettings())

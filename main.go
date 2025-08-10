@@ -65,17 +65,14 @@ func main() {
 	filterContracts := []string{}
 	filterContractsEnv := getEnv("FILTER_CONTRACTS", "")
 	if filterContractsEnv != "" {
+		// Environment variable takes precedence
 		filterContracts = strings.Split(filterContractsEnv, ",")
 		for i := range filterContracts {
 			filterContracts[i] = strings.TrimSpace(filterContracts[i])
 		}
-	}
-	// Use the specific contract addresses if no env var is set
-	if len(filterContracts) == 0 {
-		filterContracts = []string{
-			"CADB73DZ7QP5BG5ZG6MRRL3J3X4WWHBCJ7PMCVZXYG7ZGCPIO2XCDBOM",
-			"CAD6YMZCO4Q3L5XZT2FD3MDHP3ZHFMYL24RZYG4YQAL4XQKVGVXYPSQQ",
-		}
+	} else {
+		// Read from config file
+		filterContracts = cfg.GetStringSlice("stellar.filter_contracts")
 	}
 
 	ingCfg := &handlers.Config{
