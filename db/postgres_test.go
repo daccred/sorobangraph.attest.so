@@ -35,23 +35,38 @@ func TestDatabaseOperations(t *testing.T) {
 	defer mockDB.Close()
 
 	t.Run("Insert ledger data", func(t *testing.T) {
+		// Mock data for ledger
+		sequence := uint32(123456)
+		hash := "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
+		previousHash := "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+		transactionCount := 15
+		operationCount := 42
+		closedAt := time.Date(2024, 1, 15, 12, 30, 45, 0, time.UTC)
+		totalCoins := int64(105443902087654321)
+		feePool := int64(923847562)
+		baseFee := uint32(100)
+		baseReserve := uint32(5000000)
+		maxTxSetSize := uint32(1000)
+		protocolVersion := uint32(20)
+		ledgerHeader := []byte(`{"ledger_version": 20, "bucket_list_hash": "abc123", "fee_pool": 923847562}`)
+
 		// Prepare mock expectations
 		mock.ExpectBegin()
 		mock.ExpectExec("INSERT INTO ledgers").
 			WithArgs(
-				uint32(1000),      // sequence
-				"abc123",          // hash
-				"xyz789",          // previous_hash
-				10,                // transaction_count
-				25,                // operation_count
-				sqlmock.AnyArg(),  // closed_at
-				int64(1000000000), // total_coins
-				int64(500000),     // fee_pool
-				uint32(100),       // base_fee
-				uint32(10000000),  // base_reserve
-				uint32(1000),      // max_tx_set_size
-				uint32(20),        // protocol_version
-				sqlmock.AnyArg(),  // ledger_header JSON
+				sequence,
+				hash,
+				previousHash,
+				transactionCount,
+				operationCount,
+				closedAt,
+				totalCoins,
+				feePool,
+				baseFee,
+				baseReserve,
+				maxTxSetSize,
+				protocolVersion,
+				ledgerHeader,
 			).
 			WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectCommit()
@@ -67,10 +82,9 @@ func TestDatabaseOperations(t *testing.T) {
 				base_reserve, max_tx_set_size, protocol_version, ledger_header)
 			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 			ON CONFLICT (sequence) DO NOTHING`,
-			uint32(1000), "abc123", "xyz789", 10, 25,
-			time.Now(), int64(1000000000), int64(500000),
-			uint32(100), uint32(10000000), uint32(1000), uint32(20),
-			[]byte(`{"test": "data"}`))
+			sequence, hash, previousHash, transactionCount, operationCount,
+			closedAt, totalCoins, feePool, baseFee, baseReserve, maxTxSetSize, protocolVersion,
+			ledgerHeader)
 
 		require.NoError(t, err)
 
@@ -84,23 +98,39 @@ func TestDatabaseOperations(t *testing.T) {
 	})
 
 	t.Run("Insert transaction data", func(t *testing.T) {
+		// Mock data for transaction
+		id := "123456-2"
+		txHash := "fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321"
+		ledger := uint32(123456)
+		index := uint32(2)
+		sourceAccount := "GCLWGQPMKXQSPF776IU33AH4PZNOOWNAWGGKVTBQMIC5IMKUNP3E6NVU"
+		feePaid := int64(300)
+		operationCount := int32(2)
+		createdAt := time.Date(2024, 1, 15, 12, 31, 0, 0, time.UTC)
+		memoType := "text"
+		memoValue := "Payment for services"
+		successful := true
+		envelopeXdr := []byte("AAAAAGL8HQvQkbK2HA3WVjRrKmjX00fG8sLI7m0ERwJW/AX3AAAAZAAiII0AAAATAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAABAAAAAITg3T38VRqKKrpZPn6Rrf/k6J1IPf/7YY9YEwWGKtJWAAAAAAAAAAAAmJaAAAAAAAAAAAH8BfcAAABAB4O6RrQH+yxLUKKJ2LLYh6OVcbKJLG0cZFOMbDzKLVkD7GGGQdF4Tx7/Jt+7M//jIJqJALWDaEDCbHZxOCqAWg==")
+		resultXdr := []byte("AAAAAAAAAGQAAAAAAAAAAQAAAAAAAAABAAAAAAAAAAA=")
+		resultMetaXdr := []byte("AAAAAgAAAAIAAAADAAAAAQAAAAAAAAAAiODdPfxVGooqulk+fpGt/+TonUg9//thj1gTBYYq0lYAAAAXSHboAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAEAAAAAAAAAAIjg3T38VRqKKrpZPn6Rrf/k6J1IPf/7YY9YEwWGKtJWAAAAF0h26AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAA")
+
 		mock.ExpectBegin()
 		mock.ExpectExec("INSERT INTO transactions").
 			WithArgs(
-				"1000-0",         // id
-				"tx_hash_123",    // hash
-				uint32(1000),     // ledger
-				uint32(0),        // index
-				"GABC123",        // source_account
-				int64(100),       // fee_paid
-				int32(3),         // operation_count
-				sqlmock.AnyArg(), // created_at
-				"text",           // memo_type
-				"test memo",      // memo_value
-				true,             // successful
-				sqlmock.AnyArg(), // envelope_xdr
-				sqlmock.AnyArg(), // result_xdr
-				sqlmock.AnyArg(), // result_meta_xdr
+				id,
+				txHash,
+				ledger,
+				index,
+				sourceAccount,
+				feePaid,
+				operationCount,
+				createdAt,
+				memoType,
+				memoValue,
+				successful,
+				envelopeXdr,
+				resultXdr,
+				resultMetaXdr,
 			).
 			WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectCommit()
@@ -114,10 +144,8 @@ func TestDatabaseOperations(t *testing.T) {
 				envelope_xdr, result_xdr, result_meta_xdr)
 			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 			ON CONFLICT (id) DO NOTHING`,
-			"1000-0", "tx_hash_123", uint32(1000), uint32(0),
-			"GABC123", int64(100), int32(3), time.Now(),
-			"text", "test memo", true,
-			[]byte("envelope"), []byte("result"), []byte("meta"))
+			id, txHash, ledger, index, sourceAccount, feePaid, operationCount, createdAt,
+			memoType, memoValue, successful, envelopeXdr, resultXdr, resultMetaXdr)
 
 		require.NoError(t, err)
 
@@ -129,15 +157,28 @@ func TestDatabaseOperations(t *testing.T) {
 	})
 
 	t.Run("Insert operation data", func(t *testing.T) {
+		// Mock data for operation
+		id := "123456-2-0"
+		transactionId := "123456-2"
+		index := uint32(0)
+		operationType := "payment"
+		sourceAccount := "GCLWGQPMKXQSPF776IU33AH4PZNOOWNAWGGKVTBQMIC5IMKUNP3E6NVU"
+		details := []byte(`{
+			"from": "GCLWGQPMKXQSPF776IU33AH4PZNOOWNAWGGKVTBQMIC5IMKUNP3E6NVU",
+			"to": "GAS4V4O2B7DW5T7IQRPEEVCRXMDZESKISR7DVIGKZQYYV3OSQ5SH5LVP",
+			"amount": "10.0000000",
+			"asset_type": "native"
+		}`)
+
 		mock.ExpectBegin()
 		mock.ExpectExec("INSERT INTO operations").
 			WithArgs(
-				"1000-0-0",       // id
-				"1000-0",         // transaction_id
-				uint32(0),        // index
-				"payment",        // type
-				"GABC123",        // source_account
-				sqlmock.AnyArg(), // details JSON
+				id,
+				transactionId,
+				index,
+				operationType,
+				sourceAccount,
+				details,
 			).
 			WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectCommit()
@@ -149,8 +190,7 @@ func TestDatabaseOperations(t *testing.T) {
 			INSERT INTO operations (id, transaction_id, index, type, source_account, details)
 			VALUES ($1, $2, $3, $4, $5, $6)
 			ON CONFLICT (id) DO NOTHING`,
-			"1000-0-0", "1000-0", uint32(0), "payment", "GABC123",
-			[]byte(`{"amount": 1000000}`))
+			id, transactionId, index, operationType, sourceAccount, details)
 
 		require.NoError(t, err)
 
@@ -162,17 +202,33 @@ func TestDatabaseOperations(t *testing.T) {
 	})
 
 	t.Run("Insert contract event", func(t *testing.T) {
+		// Mock data for contract event
+		eventId := "123456-2-0-0-0001"
+		contractId := "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQAYYKVPINOU"
+		ledger := uint32(123456)
+		transactionHash := "fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321"
+		eventType := "contract"
+		topics := []byte(`[
+			"AAAADwAAAAdDT1VOVEVSAA==",
+			"AAAAEAAAAAEAAAACAAAADwAAAAdBQ0NPVU5UAAAAAAASAAAAAQAAAAIAAAAPAAAAB0JBTEFOQ0UAAAAA"
+		]`)
+		data := []byte(`{
+			"type": "i128",
+			"value": "1000000000"
+		}`)
+		inSuccessfulTx := true
+
 		mock.ExpectBegin()
 		mock.ExpectExec("INSERT INTO contract_events").
 			WithArgs(
-				"event_123",      // id
-				"contract_abc",   // contract_id
-				uint32(1000),     // ledger
-				"tx_hash_123",    // transaction_hash
-				"contract",       // event_type
-				sqlmock.AnyArg(), // topics JSON
-				sqlmock.AnyArg(), // data JSON
-				true,             // in_successful_tx
+				eventId,
+				contractId,
+				ledger,
+				transactionHash,
+				eventType,
+				topics,
+				data,
+				inSuccessfulTx,
 			).
 			WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectCommit()
@@ -185,8 +241,7 @@ func TestDatabaseOperations(t *testing.T) {
 				event_type, topics, data, in_successful_tx)
 			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 			ON CONFLICT (id) DO NOTHING`,
-			"event_123", "contract_abc", uint32(1000), "tx_hash_123",
-			"contract", []byte(`["topic1", "topic2"]`), []byte(`{"key": "value"}`), true)
+			eventId, contractId, ledger, transactionHash, eventType, topics, data, inSuccessfulTx)
 
 		require.NoError(t, err)
 
@@ -198,12 +253,17 @@ func TestDatabaseOperations(t *testing.T) {
 	})
 
 	t.Run("Update ingestion state", func(t *testing.T) {
+		// Mock data for ingestion state
+		id := 1
+		lastLedger := uint32(123456)
+		updatedAt := time.Date(2024, 1, 15, 12, 35, 0, 0, time.UTC)
+
 		mock.ExpectBegin()
 		mock.ExpectExec("INSERT INTO ingestion_state").
 			WithArgs(
-				1,                // id (first id argument)
-				uint32(1000),     // last_ledger
-				sqlmock.AnyArg(), // updated_at
+				id,
+				lastLedger,
+				updatedAt,
 			).
 			WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectCommit()
@@ -217,7 +277,7 @@ func TestDatabaseOperations(t *testing.T) {
 			ON CONFLICT (id) DO UPDATE SET
 				last_ledger = EXCLUDED.last_ledger,
 				updated_at = EXCLUDED.updated_at`,
-			1, uint32(1000), time.Now())
+			id, lastLedger, updatedAt)
 
 		require.NoError(t, err)
 
@@ -229,31 +289,38 @@ func TestDatabaseOperations(t *testing.T) {
 	})
 
 	t.Run("Query last ledger", func(t *testing.T) {
+		// Mock data for query
+		id := 1
+		expectedLastLedger := uint32(123455)
+
 		rows := sqlmock.NewRows([]string{"last_ledger"}).
-			AddRow(uint32(5000))
+			AddRow(expectedLastLedger)
 
 		mock.ExpectQuery("SELECT last_ledger FROM ingestion_state WHERE").
-			WithArgs(1).
+			WithArgs(id).
 			WillReturnRows(rows)
 
 		var lastLedger uint32
-		err := mockDB.QueryRow(`SELECT last_ledger FROM ingestion_state WHERE id = $1`, 1).
+		err := mockDB.QueryRow(`SELECT last_ledger FROM ingestion_state WHERE id = $1`, id).
 			Scan(&lastLedger)
 
 		require.NoError(t, err)
-		assert.Equal(t, uint32(5000), lastLedger)
+		assert.Equal(t, expectedLastLedger, lastLedger)
 
 		err = mock.ExpectationsWereMet()
 		assert.NoError(t, err)
 	})
 
 	t.Run("Query with no rows", func(t *testing.T) {
+		// Mock data for no rows scenario
+		id := 999
+
 		mock.ExpectQuery("SELECT last_ledger FROM ingestion_state WHERE").
-			WithArgs(1).
+			WithArgs(id).
 			WillReturnError(sql.ErrNoRows)
 
 		var lastLedger uint32
-		err := mockDB.QueryRow(`SELECT last_ledger FROM ingestion_state WHERE id = $1`, 1).
+		err := mockDB.QueryRow(`SELECT last_ledger FROM ingestion_state WHERE id = $1`, id).
 			Scan(&lastLedger)
 
 		assert.Equal(t, sql.ErrNoRows, err)
@@ -263,6 +330,9 @@ func TestDatabaseOperations(t *testing.T) {
 	})
 
 	t.Run("Transaction rollback on error", func(t *testing.T) {
+		// Mock data for rollback scenario
+		sequence := uint32(123457)
+
 		mock.ExpectBegin()
 		mock.ExpectExec("INSERT INTO ledgers").
 			WillReturnError(sql.ErrConnDone)
@@ -271,7 +341,7 @@ func TestDatabaseOperations(t *testing.T) {
 		tx, err := mockDB.Begin()
 		require.NoError(t, err)
 
-		_, err = tx.Exec(`INSERT INTO ledgers (sequence) VALUES ($1)`, 1000)
+		_, err = tx.Exec(`INSERT INTO ledgers (sequence) VALUES ($1)`, sequence)
 		assert.Error(t, err)
 
 		err = tx.Rollback()

@@ -2,7 +2,6 @@ package config
 
 import (
 	"log"
-	"path/filepath"
 
 	"github.com/spf13/viper"
 )
@@ -41,13 +40,8 @@ func Init(env string) {
 		log.Fatalf("error on parsing %s configuration file: %v", configName, err)
 	}
 
-	config.MergeConfigMap(envConfig.AllSettings())
-}
-
-func relativePath(basedir string, path *string) {
-	p := *path
-	if len(p) > 0 && p[0] != '/' {
-		*path = filepath.Join(basedir, p)
+	if err := config.MergeConfigMap(envConfig.AllSettings()); err != nil {
+		log.Fatalf("failed to merge %s configuration: %v", configName, err)
 	}
 }
 

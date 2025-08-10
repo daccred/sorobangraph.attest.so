@@ -34,5 +34,4 @@ func (u UserController) Retrieve(c *gin.Context) {
 	}
 	c.JSON(http.StatusBadRequest, gin.H{"message": "bad request"})
 	c.Abort()
-	return
 }

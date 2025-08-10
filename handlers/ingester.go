@@ -179,7 +179,13 @@ func (i *Ingester) processLedger(ledgerCloseMeta xdr.LedgerCloseMeta) error {
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer dbTx.Rollback()
+	defer func() {
+		if dbTx != nil {
+			if err := dbTx.Rollback(); err != nil && err != sql.ErrTxDone {
+				i.logger.Errorf("rollback failed: %v", err)
+			}
+		}
+	}()
 
 	// Count operations in all transactions
 	operationCount := 0
@@ -251,6 +257,8 @@ func (i *Ingester) processLedger(ledgerCloseMeta xdr.LedgerCloseMeta) error {
 	if err := dbTx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
+	// Prevent deferred rollback after successful commit
+	dbTx = nil
 
 	if i.wsHub != nil {
 		i.wsHub.broadcast <- map[string]interface{}{"type": "ledger", "data": ledgerInfo}

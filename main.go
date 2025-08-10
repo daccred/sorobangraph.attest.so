@@ -62,8 +62,8 @@ func main() {
 	defer dbConn.Close()
 
 	// Parse filter contracts from environment variable or config
-	filterContracts := []string{}
 	filterContractsEnv := getEnv("FILTER_CONTRACTS", "")
+	var filterContracts []string
 	if filterContractsEnv != "" {
 		// Environment variable takes precedence
 		filterContracts = strings.Split(filterContractsEnv, ",")

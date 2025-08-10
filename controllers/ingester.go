@@ -224,7 +224,10 @@ func (ic *IngesterController) GetContractEvents(c *gin.Context) {
 		var topicsJSON, dataJSON []byte
 		if err := rows.Scan(&event.ID, &event.ContractID, &event.Ledger,
 			&event.TransactionHash, &event.EventType, &topicsJSON, &dataJSON, &event.InSuccessfulTx); err == nil {
-			json.Unmarshal(topicsJSON, &event.Topics)
+			if err := json.Unmarshal(topicsJSON, &event.Topics); err != nil {
+				// skip this row if topics cannot be decoded
+				continue
+			}
 			event.Data = dataJSON
 			events = append(events, event)
 		}
@@ -234,10 +237,22 @@ func (ic *IngesterController) GetContractEvents(c *gin.Context) {
 
 func (ic *IngesterController) GetStats(c *gin.Context) {
 	stats := *ic.stats
-	ic.db.QueryRow("SELECT COUNT(*) FROM transactions").Scan(&stats.TransactionCount)
-	ic.db.QueryRow("SELECT COUNT(*) FROM contract_events").Scan(&stats.EventCount)
-	ic.db.QueryRow("SELECT COUNT(*) FROM operations").Scan(&stats.OperationCount)
-	ic.db.QueryRow("SELECT COUNT(*) FROM ledgers").Scan(&stats.LedgersProcessed)
+	if err := ic.db.QueryRow("SELECT COUNT(*) FROM transactions").Scan(&stats.TransactionCount); err != nil && err != sql.ErrNoRows {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": "Failed to fetch stats"})
+		return
+	}
+	if err := ic.db.QueryRow("SELECT COUNT(*) FROM contract_events").Scan(&stats.EventCount); err != nil && err != sql.ErrNoRows {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": "Failed to fetch stats"})
+		return
+	}
+	if err := ic.db.QueryRow("SELECT COUNT(*) FROM operations").Scan(&stats.OperationCount); err != nil && err != sql.ErrNoRows {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": "Failed to fetch stats"})
+		return
+	}
+	if err := ic.db.QueryRow("SELECT COUNT(*) FROM ledgers").Scan(&stats.LedgersProcessed); err != nil && err != sql.ErrNoRows {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": "Failed to fetch stats"})
+		return
+	}
 	stats.LastUpdateTime = time.Now()
 	c.JSON(http.StatusOK, gin.H{"success": true, "data": stats})
 }
