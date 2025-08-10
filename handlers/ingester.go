@@ -592,6 +592,9 @@ func (i *Ingester) updateIngestionState(tx *sql.Tx, ledger uint32) error {
 }
 
 func (i *Ingester) loadLastLedger() (uint32, error) {
+	if i.db == nil {
+		return 0, nil
+	}
 	var lastLedger uint32
 	err := i.db.QueryRow(`SELECT last_ledger FROM ingestion_state WHERE id = 1`).Scan(&lastLedger)
 	if err == sql.ErrNoRows {
