@@ -20,7 +20,7 @@ require (
 	cloud.google.com/go/compute/metadata v0.3.0 // indirect
 	cloud.google.com/go/iam v1.1.8 // indirect
 	cloud.google.com/go/storage v1.42.0 // indirect
-	github.com/DATA-DOG/go-sqlmock v1.5.2 // indirect
+	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/Masterminds/squirrel v1.5.4 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/aws/aws-sdk-go v1.45.27 // indirect
@@ -108,7 +108,7 @@ require (
 	github.com/stellar/go-xdr v0.0.0-20231122183749-b53fb00bcac2 // indirect
 	github.com/stellar/stellar-rpc v0.9.6-0.20250130160539-be7702aa01ba // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
-	github.com/stretchr/testify v1.9.0 // indirect
+	github.com/stretchr/testify v1.9.0
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.11 // indirect
 	go.opencensus.io v0.24.0 // indirect
